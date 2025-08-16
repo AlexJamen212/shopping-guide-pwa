@@ -1,0 +1,257 @@
+import type { ShoppingList, Template, Store, ItemSuggestion, ReceiptData, SyncResult } from '../types'
+
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
+
+class ApiService {
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const url = `${API_BASE}${endpoint}`
+    
+    const config: RequestInit = {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      ...options,
+    }
+
+    try {
+      const response = await fetch(url, config)
+      
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status} ${response.statusText}`)
+      }
+      
+      return await response.json()
+    } catch (error) {
+      console.error('API Request failed:', error)
+      throw error
+    }
+  }
+
+  // Lists API
+  async getLists(storeId?: string, active?: boolean): Promise<ShoppingList[]> {
+    const params = new URLSearchParams()
+    if (storeId) params.append('storeId', storeId)
+    if (active !== undefined) params.append('active', active.toString())
+    
+    return this.request(`/lists?${params}`)
+  }
+
+  async getList(id: string): Promise<ShoppingList> {
+    return this.request(`/lists/${id}`)
+  }
+
+  async createList(list: Partial<ShoppingList>): Promise<ShoppingList> {
+    return this.request('/lists', {
+      method: 'POST',
+      body: JSON.stringify(list),
+    })
+  }
+
+  async updateList(id: string, updates: Partial<ShoppingList>): Promise<ShoppingList> {
+    return this.request(`/lists/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    })
+  }
+
+  async completeList(id: string): Promise<{ success: boolean }> {
+    return this.request(`/lists/${id}/complete`, {
+      method: 'POST',
+    })
+  }
+
+  async addItemToList(listId: string, item: Partial<ShoppingList['items'][0]>): Promise<ShoppingList['items'][0]> {
+    return this.request(`/lists/${listId}/items`, {
+      method: 'POST',
+      body: JSON.stringify(item),
+    })
+  }
+
+  async updateListItem(listId: string, itemId: string, updates: Partial<ShoppingList['items'][0]>): Promise<ShoppingList['items'][0]> {
+    return this.request(`/lists/${listId}/items/${itemId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    })
+  }
+
+  async removeListItem(listId: string, itemId: string): Promise<{ success: boolean }> {
+    return this.request(`/lists/${listId}/items/${itemId}`, {
+      method: 'DELETE',
+    })
+  }
+
+  // Templates API
+  async getTemplates(storeId?: string): Promise<Template[]> {
+    const params = storeId ? `?storeId=${storeId}` : ''
+    return this.request(`/templates${params}`)
+  }
+
+  async getTemplate(id: string): Promise<Template> {
+    return this.request(`/templates/${id}`)
+  }
+
+  async createTemplate(template: Partial<Template>): Promise<Template> {
+    return this.request('/templates', {
+      method: 'POST',
+      body: JSON.stringify(template),
+    })
+  }
+
+  async updateTemplate(id: string, updates: Partial<Template>): Promise<Template> {
+    return this.request(`/templates/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    })
+  }
+
+  async getTemplateSuggestions(templateId: string, context?: { season?: string; dayOfWeek?: string; timeOfDay?: string }): Promise<ItemSuggestion[]> {
+    const params = new URLSearchParams()
+    if (context?.season) params.append('season', context.season)
+    if (context?.dayOfWeek) params.append('dayOfWeek', context.dayOfWeek)
+    if (context?.timeOfDay) params.append('timeOfDay', context.timeOfDay)
+    
+    return this.request(`/templates/${templateId}/suggestions?${params}`)
+  }
+
+  async generateListFromTemplate(templateId: string, options: {
+    listName?: string
+    includeOptional?: boolean
+    customizations?: Record<string, { quantity?: string; notes?: string }>
+  }): Promise<ShoppingList> {
+    return this.request(`/templates/${templateId}/generate-list`, {
+      method: 'POST',
+      body: JSON.stringify(options),
+    })
+  }
+
+  // Stores API
+  async getStores(): Promise<Store[]> {
+    return this.request('/stores')
+  }
+
+  async getStore(id: string): Promise<Store> {
+    return this.request(`/stores/${id}`)
+  }
+
+  async createStore(store: Partial<Store>): Promise<Store> {
+    return this.request('/stores', {
+      method: 'POST',
+      body: JSON.stringify(store),
+    })
+  }
+
+  async updateStore(id: string, updates: Partial<Store>): Promise<Store> {
+    return this.request(`/stores/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    })
+  }
+
+  async getStoreTemplates(): Promise<Record<string, any>> {
+    return this.request('/stores/templates')
+  }
+
+  // Receipts API
+  async scanReceipt(file: File, storeId: string): Promise<{
+    success: boolean
+    receiptId?: string
+    items?: ReceiptData['items']
+    total?: number
+    confidence?: number
+    needsManualReview?: boolean
+  }> {
+    const formData = new FormData()
+    formData.append('receipt', file)
+    formData.append('storeId', storeId)
+
+    return this.request('/receipts/scan', {
+      method: 'POST',
+      body: formData,
+      headers: {}, // Let browser set Content-Type for FormData
+    })
+  }
+
+  async getReceipts(storeId?: string, status?: string, limit?: number): Promise<ReceiptData[]> {
+    const params = new URLSearchParams()
+    if (storeId) params.append('storeId', storeId)
+    if (status) params.append('status', status)
+    if (limit) params.append('limit', limit.toString())
+    
+    return this.request(`/receipts?${params}`)
+  }
+
+  // Analytics API
+  async getShoppingSuggestions(currentList: string[], storeId: string, context?: {
+    season?: string
+    dayOfWeek?: string
+    timeOfDay?: string
+  }): Promise<ItemSuggestion[]> {
+    return this.request('/analytics/suggestions', {
+      method: 'POST',
+      body: JSON.stringify({ currentList, storeId, context }),
+    })
+  }
+
+  async getShoppingPatterns(type?: string, storeId?: string): Promise<any[]> {
+    const params = new URLSearchParams()
+    if (type) params.append('type', type)
+    if (storeId) params.append('storeId', storeId)
+    
+    return this.request(`/analytics/patterns?${params}`)
+  }
+
+  async triggerPatternAnalysis(): Promise<{ success: boolean }> {
+    return this.request('/analytics/patterns/analyze', {
+      method: 'POST',
+    })
+  }
+
+  // Sync API
+  async syncUp(userId: string, deviceId: string, data: any, lastSyncVersion?: number): Promise<SyncResult> {
+    return this.request('/sync/up', {
+      method: 'POST',
+      body: JSON.stringify({ userId, deviceId, data, lastSyncVersion }),
+    })
+  }
+
+  async syncDown(userId: string, deviceId: string, lastSyncVersion?: number): Promise<{
+    success: boolean
+    data: any
+    version: number
+    hasUpdates: boolean
+  }> {
+    const params = new URLSearchParams()
+    params.append('userId', userId)
+    params.append('deviceId', deviceId)
+    if (lastSyncVersion) params.append('lastSyncVersion', lastSyncVersion.toString())
+    
+    return this.request(`/sync/down?${params}`)
+  }
+
+  async createShareLink(userId: string, type: 'template' | 'list', itemId: string): Promise<{
+    success: boolean
+    shareUrl?: string
+    expiresAt?: string
+  }> {
+    return this.request('/sync/share', {
+      method: 'POST',
+      body: JSON.stringify({ userId, type, itemId }),
+    })
+  }
+
+  async getSharedItem(shareId: string): Promise<{
+    success: boolean
+    type?: string
+    data?: any
+  }> {
+    return this.request(`/sync/shared/${shareId}`)
+  }
+
+  // Health check
+  async healthCheck(): Promise<{ status: string }> {
+    return this.request('/health')
+  }
+}
+
+export const api = new ApiService()
