@@ -17,6 +17,7 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="mask-icon" href="/masked-icon.svg" color="#059669" />
+    <link rel="manifest" href="/manifest.json" />
     
     <!-- Splash Screens for iOS -->
     <meta name="apple-mobile-web-app-title" content="Shopping Guide">
@@ -43,7 +44,7 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
-          navigator.serviceWorker.register('/sw.js', { scope: '/' })
+          navigator.serviceWorker.register('/shopping-guide-pwa/sw.js', { scope: '/shopping-guide-pwa/' })
             .then(function(registration) {
               console.log('ServiceWorker registration successful');
             })

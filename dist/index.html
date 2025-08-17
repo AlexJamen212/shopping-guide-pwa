@@ -17,6 +17,7 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="mask-icon" href="/masked-icon.svg" color="#059669" />
+    <link rel="manifest" href="data:application/json;base64,ew0KICAibmFtZSI6ICJTaG9wcGluZyBHdWlkZSIsDQogICJzaG9ydF9uYW1lIjogIlNob3BwaW5nIiwNCiAgImRlc2NyaXB0aW9uIjogIlNtYXJ0IHNob3BwaW5nIGxpc3RzIHdpdGggbXVsdGktc3RvcmUgc3VwcG9ydCIsDQogICJzdGFydF91cmwiOiAiL3Nob3BwaW5nLWd1aWRlLXB3YS8iLA0KICAic2NvcGUiOiAiL3Nob3BwaW5nLWd1aWRlLXB3YS8iLA0KICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwNCiAgInRoZW1lX2NvbG9yIjogIiMwNTk2NjkiLA0KICAiYmFja2dyb3VuZF9jb2xvciI6ICIjZmZmZmZmIiwNCiAgImljb25zIjogWw0KICAgIHsNCiAgICAgICJzcmMiOiAiL3Nob3BwaW5nLWd1aWRlLXB3YS9pY29uLTE5Mi5wbmciLA0KICAgICAgInNpemVzIjogIjE5MngxOTIiLA0KICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIg0KICAgIH0sDQogICAgew0KICAgICAgInNyYyI6ICIvc2hvcHBpbmctZ3VpZGUtcHdhL2ljb24tNTEyLnBuZyIsDQogICAgICAic2l6ZXMiOiAiNTEyeDUxMiIsDQogICAgICAidHlwZSI6ICJpbWFnZS9wbmciDQogICAgfQ0KICBdDQp9" />
     
     <!-- Splash Screens for iOS -->
     <meta name="apple-mobile-web-app-title" content="Shopping Guide">
@@ -45,7 +46,7 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
-          navigator.serviceWorker.register('/sw.js', { scope: '/' })
+          navigator.serviceWorker.register('/shopping-guide-pwa/sw.js', { scope: '/shopping-guide-pwa/' })
             .then(function(registration) {
               console.log('ServiceWorker registration successful');
             })
